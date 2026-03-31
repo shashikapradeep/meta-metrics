@@ -1,0 +1,16 @@
+{
+  "name": "meta-metrics-poc",
+  "version": "1.0.0",
+  "description": "POC: fetch paid/boosted Instagram post metrics via Meta Ads API",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "axios": "^1.13.6",
+    "better-sqlite3": "^12.8.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1"
+  }
+}

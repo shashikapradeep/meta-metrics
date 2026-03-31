@@ -1,0 +1,324 @@
+{
+  "info": {
+    "name": "Meta Metrics POC",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "meta_poc_base_url",
+      "value": "https://0294-70-68-43-199.ngrok-free.app",
+      "type": "string"
+    },
+    {
+      "key": "ig_user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "media_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Connect Instagram (open in browser)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/auth/connect",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["auth", "connect"]
+            },
+            "description": "Redirects the influencer to Facebook OAuth. Open this in a browser, not Postman."
+          }
+        },
+        {
+          "name": "Debug OAuth URL",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/auth/debug-url",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["auth", "debug-url"]
+            },
+            "description": "Returns the exact OAuth URL the app would redirect to. Use this to diagnose redirect_uri or scope issues."
+          }
+        },
+        {
+          "name": "Get Connected Accounts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/auth/status",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["auth", "status"]
+            },
+            "description": "Returns all connected influencer Instagram accounts stored in the database."
+          }
+        },
+        {
+          "name": "Disconnect Account",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/auth/disconnect/{{ig_user_id}}",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["auth", "disconnect", "{{ig_user_id}}"]
+            },
+            "description": "Removes the Instagram and Meta Ads tokens for the given influencer."
+          }
+        },
+        {
+          "name": "Refresh Tokens (all expiring soon)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/auth/refresh-tokens",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["auth", "refresh-tokens"]
+            },
+            "description": "Refreshes all Instagram tokens expiring within 30 days. Runs automatically on a 24h schedule."
+          }
+        },
+        {
+          "name": "Refresh Token (single account)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/auth/refresh-tokens?ig_user_id={{ig_user_id}}",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["auth", "refresh-tokens"],
+              "query": [
+                { "key": "ig_user_id", "value": "{{ig_user_id}}" }
+              ]
+            },
+            "description": "Force-refreshes the token for a specific influencer regardless of expiry."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Meta Ads Connection",
+      "item": [
+        {
+          "name": "Init Meta Ads OAuth",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{meta_poc_base_url}}/connections/meta-ads/init",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["connections", "meta-ads", "init"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ig_user_id\": \"{{ig_user_id}}\",\n  \"return_to\": \"/ui\"\n}"
+            },
+            "description": "Returns an authUrl. Open that URL in a browser to let the influencer authorize their ad account."
+          }
+        },
+        {
+          "name": "Get Meta Ads Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/connections/meta-ads/status?ig_user_id={{ig_user_id}}",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["connections", "meta-ads", "status"],
+              "query": [
+                { "key": "ig_user_id", "value": "{{ig_user_id}}" }
+              ]
+            },
+            "description": "Returns Meta Ads connection status and stored scopes for the influencer."
+          }
+        },
+        {
+          "name": "Check Meta Ads Permissions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/connections/meta-ads/permissions?ig_user_id={{ig_user_id}}",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["connections", "meta-ads", "permissions"],
+              "query": [
+                { "key": "ig_user_id", "value": "{{ig_user_id}}" }
+              ]
+            },
+            "description": "Calls the Meta API live to check which permissions are currently granted."
+          }
+        },
+        {
+          "name": "List Ad Accounts",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/connections/meta-ads/ad-accounts?ig_user_id={{ig_user_id}}",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["connections", "meta-ads", "ad-accounts"],
+              "query": [
+                { "key": "ig_user_id", "value": "{{ig_user_id}}" }
+              ]
+            },
+            "description": "Lists all ad accounts accessible via the stored Meta Ads token."
+          }
+        },
+        {
+          "name": "Select Ad Account",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{meta_poc_base_url}}/connections/meta-ads/select-ad-account",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["connections", "meta-ads", "select-ad-account"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ig_user_id\": \"{{ig_user_id}}\",\n  \"ad_account_id\": \"act_XXXXXXXXXX\"\n}"
+            },
+            "description": "Updates which ad account to use for boosted post lookups for this influencer."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Media & Insights",
+      "item": [
+        {
+          "name": "Get Post Metrics by URL",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/api/media/insights-by-url?ig_user_id={{ig_user_id}}&post_url=https://www.instagram.com/p/SHORTCODE/",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["api", "media", "insights-by-url"],
+              "query": [
+                { "key": "ig_user_id", "value": "{{ig_user_id}}" },
+                { "key": "post_url", "value": "https://www.instagram.com/p/SHORTCODE/" }
+              ]
+            },
+            "description": "Paste any Instagram post URL. Extracts the shortcode, finds the media ID, and returns all available metrics in one call."
+          }
+        },
+        {
+          "name": "List Media",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/api/media?ig_user_id={{ig_user_id}}",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["api", "media"],
+              "query": [
+                { "key": "ig_user_id", "value": "{{ig_user_id}}" }
+              ]
+            },
+            "description": "Lists the influencer's recent Instagram posts (up to 50)."
+          }
+        },
+        {
+          "name": "Get All Media Insights",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/api/media/insights?ig_user_id={{ig_user_id}}",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["api", "media", "insights"],
+              "query": [
+                { "key": "ig_user_id", "value": "{{ig_user_id}}" }
+              ]
+            },
+            "description": "Fetches organic Instagram insights for all recent posts and caches them in SQLite."
+          }
+        },
+        {
+          "name": "Get Single Post Insights",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/api/media/{{media_id}}/insights?ig_user_id={{ig_user_id}}",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["api", "media", "{{media_id}}", "insights"],
+              "query": [
+                { "key": "ig_user_id", "value": "{{ig_user_id}}" }
+              ]
+            },
+            "description": "Fetches organic Instagram insights for a single post."
+          }
+        },
+        {
+          "name": "View Saved Metrics Cache",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/api/saved-metrics",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["api", "saved-metrics"]
+            },
+            "description": "Returns all cached media insights from the local SQLite database."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Campaign & Paid Metrics",
+      "item": [
+        {
+          "name": "Upsert Organic Metrics",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{meta_poc_base_url}}/api/organic-metrics/upsert",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["api", "organic-metrics", "upsert"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ig_user_id\": \"{{ig_user_id}}\",\n  \"instagram_media_id\": \"{{media_id}}\",\n  \"phyllo_content_id\": null,\n  \"reach\": 9000,\n  \"impressions\": 12000,\n  \"likes\": 1200,\n  \"comments\": 85,\n  \"shares\": 40,\n  \"saves\": 65,\n  \"video_views\": null\n}"
+            },
+            "description": "Injects organic metrics from Phyllo (or any source) into the local DB for later merging."
+          }
+        },
+        {
+          "name": "Sync Boosted Metrics",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{meta_poc_base_url}}/api/campaign-content/{{media_id}}/boosted-metrics/sync?ig_user_id={{ig_user_id}}",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["api", "campaign-content", "{{media_id}}", "boosted-metrics", "sync"],
+              "query": [
+                { "key": "ig_user_id", "value": "{{ig_user_id}}" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "description": "Finds the ad linked to this Instagram post, pulls paid metrics from Meta Ads Insights, and merges with organic."
+          }
+        },
+        {
+          "name": "Get Merged Metrics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{meta_poc_base_url}}/api/campaign-content/{{media_id}}/metrics?ig_user_id={{ig_user_id}}",
+              "host": ["{{meta_poc_base_url}}"],
+              "path": ["api", "campaign-content", "{{media_id}}", "metrics"],
+              "query": [
+                { "key": "ig_user_id", "value": "{{ig_user_id}}" }
+              ]
+            },
+            "description": "Returns the latest stored organic + paid + merged view for a post without hitting external APIs."
+          }
+        }
+      ]
+    }
+  ]
+}
