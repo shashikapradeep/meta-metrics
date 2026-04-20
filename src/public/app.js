@@ -379,6 +379,326 @@ async function runSafely(fn, btn) {
   }
 }
 
+// ── TikTok ───────────────────────────────────────────────────────────────────
+
+function getOpenId() {
+  return byId('tt-open-id').value.trim()
+}
+
+function setOpenId(value) {
+  byId('tt-open-id').value = value || ''
+}
+
+async function loadTikTokStatus() {
+  const data = await api('/tiktok/auth/status')
+  const accounts = data.connected_accounts || []
+
+  setResult('tt-status', {
+    total_connected: accounts.length,
+    connected_accounts: accounts,
+  })
+
+  const select = byId('tt-creator-select')
+  const currentValue = select.value
+
+  select.innerHTML = '<option value="">— select a creator —</option>'
+  for (const account of accounts) {
+    const option = document.createElement('option')
+    option.value = account.open_id
+    option.textContent = `${account.display_name || account.open_id} (${account.open_id}) — expires ${account.expires_at}`
+    select.appendChild(option)
+  }
+
+  if (currentValue && accounts.some((a) => a.open_id === currentValue)) {
+    select.value = currentValue
+  }
+}
+
+async function loadTikTokVideos() {
+  const openId = getOpenId()
+  if (!openId) throw new Error('Select a TikTok creator first')
+
+  const data = await api(`/tiktok/api/videos/insights?open_id=${encodeURIComponent(openId)}`)
+  const videos = data.videos || []
+
+  const list = byId('tt-videos-list')
+  list.innerHTML = ''
+
+  if (!videos.length) {
+    list.textContent = 'No videos found.'
+    return
+  }
+
+  for (const v of videos) {
+    const item = document.createElement('div')
+    item.className = 'post-item'
+
+    const date = v.create_time ? new Date(v.create_time * 1000).toLocaleDateString() : '—'
+    const title = v.title || '(no title)'
+
+    item.innerHTML = `
+      <span class="post-badge">VIDEO</span>
+      <div class="post-info">
+        <div class="post-caption">${title}</div>
+        <div class="post-meta">${date} · 👁 ${v.view_count ?? '—'} · ❤ ${v.like_count ?? '—'} · 💬 ${v.comment_count ?? '—'} · ↪ ${v.share_count ?? '—'}</div>
+        <div class="post-meta">${v.video_id}</div>
+      </div>
+      <button class="post-use-btn">Use ID</button>
+    `
+
+    item.querySelector('.post-use-btn').addEventListener('click', (e) => {
+      e.stopPropagation()
+      byId('tt-video-id').value = v.video_id
+      flash(`Video ID set: ${v.video_id}`)
+    })
+
+    list.appendChild(item)
+  }
+
+  flash(`Loaded ${videos.length} videos for ${data.display_name}`)
+}
+
+async function fetchTikTokSparkMetrics() {
+  const openId = getOpenId()
+  const videoId = byId('tt-video-id').value.trim()
+  if (!openId) throw new Error('Select a TikTok creator first')
+  if (!videoId) throw new Error('Enter a TikTok video ID')
+
+  const data = await api(
+    `/tiktok/api/campaign-content/${encodeURIComponent(videoId)}/spark-metrics/sync?open_id=${encodeURIComponent(openId)}`,
+    { method: 'POST' }
+  )
+  setResult('tt-metrics-result', data)
+
+  if (data.status === 'ok') {
+    flash(`Spark Ad metrics synced — ${data.mapping?.match_confidence} confidence match`)
+  } else {
+    flash(`Status: ${data.status}`, data.status !== 'ok')
+  }
+}
+
+async function getTikTokCachedMetrics() {
+  const openId = getOpenId()
+  const videoId = byId('tt-video-id').value.trim()
+  if (!openId) throw new Error('Select a TikTok creator first')
+  if (!videoId) throw new Error('Enter a TikTok video ID')
+
+  const data = await api(
+    `/tiktok/api/campaign-content/${encodeURIComponent(videoId)}/metrics?open_id=${encodeURIComponent(openId)}`
+  )
+  setResult('tt-metrics-result', data)
+  flash(`Cached metrics status: ${data.status}`, data.status !== 'ok')
+}
+
+function wireTikTokActions() {
+  byId('tt-load-status').addEventListener('click', (e) => runSafely(loadTikTokStatus, e.currentTarget))
+  byId('tt-creator-select').addEventListener('change', () => {
+    const selected = byId('tt-creator-select').value
+    if (selected) setOpenId(selected)
+  })
+  byId('tt-load-videos').addEventListener('click', (e) => runSafely(loadTikTokVideos, e.currentTarget))
+  byId('tt-fetch-metrics').addEventListener('click', (e) => runSafely(fetchTikTokSparkMetrics, e.currentTarget))
+  byId('tt-get-cached').addEventListener('click', (e) => runSafely(getTikTokCachedMetrics, e.currentTarget))
+}
+
+function hydrateTikTokFromQueryParams() {
+  const params = new URLSearchParams(window.location.search)
+  const openId = params.get('tiktok_open_id')
+  if (openId) setOpenId(openId)
+
+  if (params.get('tiktok_connected') === '1') {
+    flash('TikTok account connected successfully')
+    runSafely(loadTikTokStatus)
+  }
+
+}
+
+// ── YouTube ──────────────────────────────────────────────────────────────────
+
+function getChannelId() {
+  return byId('yt-channel-id').value.trim()
+}
+
+function setChannelId(value) {
+  byId('yt-channel-id').value = value || ''
+}
+
+async function loadYouTubeStatus() {
+  const data = await api('/youtube/auth/status')
+  const channels = data.connected_channels || []
+
+  setResult('yt-status', {
+    total_connected: channels.length,
+    connected_channels: channels,
+  })
+
+  const select = byId('yt-channel-select')
+  const currentValue = select.value
+
+  select.innerHTML = '<option value="">— select a channel —</option>'
+  for (const ch of channels) {
+    const option = document.createElement('option')
+    option.value = ch.channel_id
+    option.textContent = `${ch.channel_title || ch.channel_id} (${ch.channel_id})`
+    select.appendChild(option)
+  }
+
+  if (currentValue && channels.some((c) => c.channel_id === currentValue)) {
+    select.value = currentValue
+  }
+}
+
+async function loadYouTubeVideos() {
+  const channelId = getChannelId()
+  if (!channelId) throw new Error('Select a YouTube channel first')
+
+  const data = await api(`/youtube/api/videos/insights?channel_id=${encodeURIComponent(channelId)}`)
+  const videos = data.videos || []
+
+  const list = byId('yt-videos-list')
+  list.innerHTML = ''
+
+  if (!videos.length) {
+    list.textContent = 'No videos found.'
+    return
+  }
+
+  for (const v of videos) {
+    const item = document.createElement('div')
+    item.className = 'post-item'
+
+    const date = v.published_at ? new Date(v.published_at).toLocaleDateString() : '—'
+    const title = v.title || '(no title)'
+    const mins = v.estimated_minutes_watched != null ? `${v.estimated_minutes_watched.toLocaleString()} min watched` : ''
+
+    item.innerHTML = `
+      <span class="post-badge">VIDEO</span>
+      <div class="post-info">
+        <div class="post-caption">${title}</div>
+        <div class="post-meta">${date} · 👁 ${(v.view_count ?? '—').toLocaleString()} · ❤ ${(v.like_count ?? '—').toLocaleString()} · 💬 ${(v.comment_count ?? '—').toLocaleString()}${mins ? ` · ${mins}` : ''}</div>
+        <div class="post-meta">${v.video_id}</div>
+      </div>
+      <button class="post-use-btn">Use ID</button>
+    `
+
+    item.querySelector('.post-use-btn').addEventListener('click', (e) => {
+      e.stopPropagation()
+      byId('yt-video-id').value = v.video_id
+      flash(`Video ID set: ${v.video_id}`)
+    })
+
+    list.appendChild(item)
+  }
+
+  flash(`Loaded ${videos.length} videos for ${data.channel_title}`)
+}
+
+async function fetchYouTubeAdMetrics() {
+  const channelId = getChannelId()
+  const videoId = byId('yt-video-id').value.trim()
+  if (!channelId) throw new Error('Select a YouTube channel first')
+  if (!videoId) throw new Error('Enter a YouTube video ID')
+
+  const data = await api(
+    `/youtube/api/campaign-content/${encodeURIComponent(videoId)}/ad-metrics/sync?channel_id=${encodeURIComponent(channelId)}`,
+    { method: 'POST' }
+  )
+  setResult('yt-metrics-result', data)
+
+  if (data.status === 'ok') {
+    const spend = data.paid?.spend != null ? ` · $${data.paid.spend.toFixed(2)} spend` : ''
+    flash(`Ad metrics synced — ${data.mapping?.match_confidence} confidence${spend}`)
+  } else {
+    flash(`Status: ${data.status}`, data.status !== 'ok')
+  }
+}
+
+async function getYouTubeCachedMetrics() {
+  const channelId = getChannelId()
+  const videoId = byId('yt-video-id').value.trim()
+  if (!channelId) throw new Error('Select a YouTube channel first')
+  if (!videoId) throw new Error('Enter a YouTube video ID')
+
+  const data = await api(
+    `/youtube/api/campaign-content/${encodeURIComponent(videoId)}/metrics?channel_id=${encodeURIComponent(channelId)}`
+  )
+  setResult('yt-metrics-result', data)
+  flash(`Cached metrics status: ${data.status}`, data.status !== 'ok')
+}
+
+function wireYouTubeActions() {
+  byId('yt-load-status').addEventListener('click', (e) => runSafely(loadYouTubeStatus, e.currentTarget))
+  byId('yt-channel-select').addEventListener('change', () => {
+    const selected = byId('yt-channel-select').value
+    if (selected) setChannelId(selected)
+  })
+  byId('yt-load-videos').addEventListener('click', (e) => runSafely(loadYouTubeVideos, e.currentTarget))
+  byId('yt-fetch-metrics').addEventListener('click', (e) => runSafely(fetchYouTubeAdMetrics, e.currentTarget))
+  byId('yt-get-cached').addEventListener('click', (e) => runSafely(getYouTubeCachedMetrics, e.currentTarget))
+}
+
+function hydrateYouTubeFromQueryParams() {
+  const params = new URLSearchParams(window.location.search)
+  const channelId = params.get('yt_channel_id')
+  if (channelId) setChannelId(channelId)
+
+  if (params.get('yt_connected') === '1') {
+    flash('YouTube channel connected successfully')
+    runSafely(loadYouTubeStatus)
+  }
+
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    const isActive = btn.dataset.tab === tabId
+    btn.classList.toggle('active', isActive)
+    btn.setAttribute('aria-selected', String(isActive))
+  })
+
+  document.querySelectorAll('.tab-panel').forEach((panel) => {
+    const isActive = panel.id === `tab-${tabId}`
+    panel.hidden = !isActive
+    panel.classList.toggle('active', isActive)
+  })
+
+  try { localStorage.setItem('activeTab', tabId) } catch {}
+}
+
+function wireTabs() {
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab))
+  })
+}
+
+function resolveInitialTab() {
+  const params = new URLSearchParams(window.location.search)
+  // OAuth callbacks set platform-specific query params — use them to auto-switch
+  if (params.has('tiktok_connected') || params.has('tiktok_open_id')) {
+    return 'tiktok'
+  }
+  if (params.has('yt_connected') || params.has('yt_channel_id')) {
+    return 'youtube'
+  }
+  if (params.has('ig_connected') || params.has('meta_ads_connected') || params.has('ig_user_id')) {
+    return 'meta'
+  }
+  try { return localStorage.getItem('activeTab') || 'meta' } catch {}
+  return 'meta'
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+
 hydrateFromQueryParams()
+hydrateTikTokFromQueryParams()
+hydrateYouTubeFromQueryParams()
+wireTabs()
 wireActions()
+wireTikTokActions()
+wireYouTubeActions()
+switchTab(resolveInitialTab())
 runSafely(loadInstagramStatus)
+runSafely(loadTikTokStatus)
+runSafely(loadYouTubeStatus)

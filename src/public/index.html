@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Meta Metrics POC UI</title>
+  <title>Platform Metrics POC UI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -12,185 +12,335 @@
 <body>
   <main class="page">
     <header class="hero">
-      <h1>Boosted Instagram Metrics</h1>
+      <h1>Platform Metrics POC</h1>
       <p class="sub">
-        Connect the influencer account, authorize the ad account used for boost, then fetch and merge organic + paid metrics.
+        Connect influencer accounts on Instagram or TikTok, authorize the ad account used for boosts, then fetch and merge organic + paid metrics.
       </p>
     </header>
 
-    <section class="card">
-      <h2>1. Connected Influencers</h2>
-      <p>Select a connected influencer to work with, or connect a new one.</p>
-      <div class="row">
-        <select id="influencer-select">
-          <option value="">— select an influencer —</option>
-        </select>
-        <button id="load-ig-status" class="btn">Refresh List</button>
-        <a class="btn primary" href="/auth/connect">+ Connect New Influencer</a>
-      </div>
-      <pre id="ig-status" class="result">No data yet.</pre>
-    </section>
+    <!-- Tab bar -->
+    <nav class="tab-bar" role="tablist">
+      <button class="tab-btn active" role="tab" data-tab="meta" aria-controls="tab-meta" aria-selected="true">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+        </svg>
+        Instagram / Meta
+      </button>
+      <button class="tab-btn" role="tab" data-tab="tiktok" aria-controls="tab-tiktok" aria-selected="false">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.27 8.27 0 004.84 1.56V6.78a4.85 4.85 0 01-1.07-.09z"/>
+        </svg>
+        TikTok
+      </button>
+      <button class="tab-btn" role="tab" data-tab="youtube" aria-controls="tab-youtube" aria-selected="false">
+        <svg class="tab-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+        </svg>
+        YouTube
+      </button>
+    </nav>
 
-    <section class="card">
-      <h2>2. Meta Ads Connection</h2>
-      <p>Meta Ads is connected automatically when an influencer connects their Instagram account. Use the buttons below to verify status or reconnect if the token has expired.</p>
-      <div class="grid">
-        <label>
-          IG User ID (auto-filled from selection above)
-          <input id="ig-user-id" placeholder="1784..." />
-        </label>
-      </div>
-      <div class="row">
-        <button id="check-meta-ads" class="btn">Check Meta Ads Status</button>
-        <button id="check-meta-perms" class="btn">Check Permissions</button>
-        <button id="connect-meta-ads" class="btn">Reconnect Meta Ads</button>
-      </div>
-      <pre id="meta-ads-status" class="result">No data yet.</pre>
-    </section>
+    <!-- ── Instagram / Meta tab ─────────────────────────────────────────────── -->
+    <div id="tab-meta" class="tab-panel active" role="tabpanel">
 
-    <section class="card">
-      <h2>3. Select Ad Account</h2>
-      <div class="row">
-        <button id="load-ad-accounts" class="btn">Load Ad Accounts</button>
-      </div>
-      <div class="row">
-        <select id="ad-account-select"></select>
-      </div>
-      <pre id="ad-account-status" class="result">No data yet.</pre>
-    </section>
-
-    <section class="card">
-      <h2>4. Recent Ad Campaigns</h2>
-      <p>View the last 10 campaigns in the selected ad account.</p>
-      <div class="row">
-        <button id="load-campaigns" class="btn primary">Load Campaigns</button>
-      </div>
-      <div id="campaigns-list" class="posts-list"></div>
-    </section>
-
-    <section class="card">
-      <h2>5. Fetch Post Metrics by URL</h2>
-      <p>Paste any Instagram post URL to fetch organic and paid (boosted) metrics in one call.</p>
-      <div class="grid">
-        <label>Instagram Post URL <input id="post-url" placeholder="https://www.instagram.com/p/..." /></label>
-      </div>
-      <div class="row">
-        <button id="fetch-post-metrics" class="btn primary">Fetch Metrics</button>
-      </div>
-      <pre id="post-metrics-result" class="result">No data yet.</pre>
-
-      <details class="metrics-legend">
-        <summary>Metrics reference &amp; overlap guide</summary>
-        <div class="legend-grid">
-          <div class="legend-group">
-            <h3>Organic <span class="legend-source">Instagram Graph API</span></h3>
-            <dl>
-              <dt>impressions</dt><dd><span class="legend-removed">Removed in Instagram API v22.0+.</span> No longer available for organic posts — only paid impressions are returned by the Ads Insights API.</dd>
-              <dt>reach</dt><dd>Unique accounts that saw the post at least once.</dd>
-              <dt>likes</dt><dd>Tap-heart reactions on the organic post.</dd>
-              <dt>comments</dt><dd>Comments left directly on the organic post.</dd>
-              <dt>shares</dt><dd>Times the post was shared via DM or story.</dd>
-              <dt>saves</dt><dd>Times the post was bookmarked.</dd>
-              <dt>plays / views</dt><dd>Video starts (Reels / Video only).</dd>
-            </dl>
-          </div>
-          <div class="legend-group">
-            <h3 class="legend-paid">Paid <span class="legend-source">Meta Ads Insights API</span></h3>
-            <dl>
-              <dt>impressions</dt><dd>Times the ad was shown. Organic impressions are unavailable (removed in API v22.0+), so this is the only impressions figure in the response.</dd>
-              <dt>reach</dt><dd>Unique people reached by the ad. <span class="overlap">Overlaps with organic reach</span> — the same person can appear in both counts when the post was also distributed organically.</dd>
-              <dt>clicks</dt><dd>Any click on the ad (link, profile, photo expand). Not available in organic metrics.</dd>
-              <dt>spend</dt><dd>Total amount charged for the boost in the account currency. Not available in organic metrics.</dd>
-              <dt>actions › link_click</dt><dd>Clicks specifically on a link in the ad (subset of <em>clicks</em>).</dd>
-              <dt>actions › post_engagement</dt><dd>All interactions rolled up: likes, comments, shares, saves, reactions, video views. <span class="overlap">Overlaps with all organic engagement counters.</span></dd>
-              <dt>actions › page_engagement</dt><dd>Interactions that also count toward the connected Facebook Page (supersets post_engagement in some placements).</dd>
-              <dt>actions › post_reaction</dt><dd>Emoji reactions (Like, Love, Haha, etc.). <span class="overlap">Overlaps with organic <em>likes</em></span> — Instagram counts these as likes.</dd>
-              <dt>actions › post</dt><dd>Shares of the ad post to a user's own feed or story.</dd>
-              <dt>actions › video_view</dt><dd>3-second+ video views via the ad. <span class="overlap">Overlaps with organic <em>plays/views</em></span> for boosted videos.</dd>
-              <dt>actions › onsite_conversion.post_save</dt><dd>Saves via the ad. <span class="overlap">Overlaps with organic <em>saves</em>.</span></dd>
-              <dt>actions › onsite_conversion.post_net_like</dt><dd>Net new likes gained through the ad (saves minus unlikes).</dd>
-              <dt>actions › onsite_conversion.post_unlike</dt><dd>Unlikes that happened after the ad-driven like.</dd>
-              <dt>actions › post_interaction_gross</dt><dd>Raw interaction count before deduplication (sum of all action types, may double-count).</dd>
-            </dl>
-          </div>
+      <section class="card">
+        <h2>1. Connected Influencers</h2>
+        <p>Select a connected influencer to work with, or connect a new one.</p>
+        <div class="row">
+          <select id="influencer-select">
+            <option value="">— select an influencer —</option>
+          </select>
+          <button id="load-ig-status" class="btn">Refresh List</button>
+          <a class="btn primary" href="/auth/connect">+ Connect New Influencer</a>
         </div>
-        <div class="legend-display">
-          <h3 class="legend-display-title">How Instagram calculates the counts shown on a post</h3>
-          <p class="legend-display-intro">
-            When a post is boosted, Instagram combines organic engagement with ad-driven engagement into a single number.
-            The formula for each visible counter is:
-          </p>
-          <table class="legend-table">
-            <thead>
-              <tr>
-                <th>Shown on post</th>
-                <th>Organic field</th>
-                <th>+ Paid action field</th>
-                <th>Note</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>LIKES</strong></td>
-                <td><code>organic.likes</code></td>
-                <td><code>onsite_conversion.post_net_like</code></td>
-                <td>Net likes = new likes minus unlikes from the ad audience.</td>
-              </tr>
-              <tr>
-                <td><strong>COMMENTS</strong></td>
-                <td><code>organic.comments</code></td>
-                <td><code>comment</code></td>
-                <td>Direct comments left via the ad placement.</td>
-              </tr>
-              <tr>
-                <td><strong>SHARES</strong></td>
-                <td><code>organic.shares</code></td>
-                <td><code>post</code></td>
-                <td>Re-shares of the post to feed or story via the ad.</td>
-              </tr>
-              <tr>
-                <td><strong>SAVES</strong></td>
-                <td><code>organic.saved</code></td>
-                <td><code>onsite_conversion.post_net_save</code></td>
-                <td>Net saves = bookmarks minus unsaves from the ad audience.</td>
-              </tr>
-            </tbody>
-          </table>
-          <p class="legend-display-example">
-            <strong>Example</strong> — post <code>DVuIhDoAchU</code>:<br>
-            Likes: 1,527 organic + 9,247 paid net likes = <strong>10,774 → shown as 10.7K</strong><br>
-            Comments: 10,473 organic + 15 paid comments = <strong>10,488 → shown as 10.5K</strong>
-          </p>
+        <pre id="ig-status" class="result">No data yet.</pre>
+      </section>
+
+      <section class="card">
+        <h2>2. Meta Ads Connection</h2>
+        <p>Meta Ads is connected automatically when an influencer connects their Instagram account. Use the buttons below to verify status or reconnect if the token has expired.</p>
+        <div class="grid">
+          <label>
+            IG User ID (auto-filled from selection above)
+            <input id="ig-user-id" placeholder="1784..." />
+          </label>
         </div>
-        <p class="legend-note">
-          <strong>Why the API returns separate numbers instead of the combined total:</strong>
-          Organic metrics come from the Instagram Graph API (media insights) and paid metrics come from the Meta Ads Insights API.
-          These are two independent systems — each records engagement from its own distribution channel.
-          Instagram's app UI deduplicates and merges them; this API response keeps them separate so you can see the contribution of each channel.
-        </p>
-      </details>
-    </section>
+        <div class="row">
+          <button id="check-meta-ads" class="btn">Check Meta Ads Status</button>
+          <button id="check-meta-perms" class="btn">Check Permissions</button>
+          <button id="connect-meta-ads" class="btn">Reconnect Meta Ads</button>
+        </div>
+        <pre id="meta-ads-status" class="result">No data yet.</pre>
+      </section>
 
-    <section class="card">
-      <h2>6. Ad Details by URL</h2>
-      <p>Enter an Instagram post URL to look up the linked ad campaign and paid performance metrics.</p>
-      <div class="grid">
-        <label>Instagram Post URL <input id="ad-post-url" placeholder="https://www.instagram.com/p/..." /></label>
-      </div>
-      <div class="row">
-        <button id="fetch-ad-details" class="btn primary">Fetch Ad Details</button>
-      </div>
-      <pre id="ad-details-result" class="result">No data yet.</pre>
-    </section>
+      <section class="card">
+        <h2>3. Select Ad Account</h2>
+        <div class="row">
+          <button id="load-ad-accounts" class="btn">Load Ad Accounts</button>
+        </div>
+        <div class="row">
+          <select id="ad-account-select"></select>
+        </div>
+        <pre id="ad-account-status" class="result">No data yet.</pre>
+      </section>
 
-    <section class="card">
-      <h2>7. Recent Posts</h2>
-      <p>Load the last 10 posts from the selected influencer's account. Click any post to use its URL in sections 4 or 5.</p>
-      <div class="row">
-        <button id="load-recent-posts" class="btn primary">Load Last 10 Posts</button>
-      </div>
-      <div id="recent-posts-list" class="posts-list"></div>
-    </section>
+      <section class="card">
+        <h2>4. Recent Ad Campaigns</h2>
+        <p>View the last 10 campaigns in the selected ad account.</p>
+        <div class="row">
+          <button id="load-campaigns" class="btn primary">Load Campaigns</button>
+        </div>
+        <div id="campaigns-list" class="posts-list"></div>
+      </section>
+
+      <section class="card">
+        <h2>5. Fetch Post Metrics by URL</h2>
+        <p>Paste any Instagram post URL to fetch organic and paid (boosted) metrics in one call.</p>
+        <div class="grid">
+          <label>Instagram Post URL <input id="post-url" placeholder="https://www.instagram.com/p/..." /></label>
+        </div>
+        <div class="row">
+          <button id="fetch-post-metrics" class="btn primary">Fetch Metrics</button>
+        </div>
+        <pre id="post-metrics-result" class="result">No data yet.</pre>
+
+        <details class="metrics-legend">
+          <summary>Metrics reference &amp; overlap guide</summary>
+          <div class="legend-grid">
+            <div class="legend-group">
+              <h3>Organic <span class="legend-source">Instagram Graph API</span></h3>
+              <dl>
+                <dt>impressions</dt><dd><span class="legend-removed">Removed in Instagram API v22.0+.</span> No longer available for organic posts — only paid impressions are returned by the Ads Insights API.</dd>
+                <dt>reach</dt><dd>Unique accounts that saw the post at least once.</dd>
+                <dt>likes</dt><dd>Tap-heart reactions on the organic post.</dd>
+                <dt>comments</dt><dd>Comments left directly on the organic post.</dd>
+                <dt>shares</dt><dd>Times the post was shared via DM or story.</dd>
+                <dt>saves</dt><dd>Times the post was bookmarked.</dd>
+                <dt>plays / views</dt><dd>Video starts (Reels / Video only).</dd>
+              </dl>
+            </div>
+            <div class="legend-group">
+              <h3 class="legend-paid">Paid <span class="legend-source">Meta Ads Insights API</span></h3>
+              <dl>
+                <dt>impressions</dt><dd>Times the ad was shown. Organic impressions are unavailable (removed in API v22.0+), so this is the only impressions figure in the response.</dd>
+                <dt>reach</dt><dd>Unique people reached by the ad. <span class="overlap">Overlaps with organic reach</span> — the same person can appear in both counts when the post was also distributed organically.</dd>
+                <dt>clicks</dt><dd>Any click on the ad (link, profile, photo expand). Not available in organic metrics.</dd>
+                <dt>spend</dt><dd>Total amount charged for the boost in the account currency. Not available in organic metrics.</dd>
+                <dt>actions › link_click</dt><dd>Clicks specifically on a link in the ad (subset of <em>clicks</em>).</dd>
+                <dt>actions › post_engagement</dt><dd>All interactions rolled up: likes, comments, shares, saves, reactions, video views. <span class="overlap">Overlaps with all organic engagement counters.</span></dd>
+                <dt>actions › page_engagement</dt><dd>Interactions that also count toward the connected Facebook Page (supersets post_engagement in some placements).</dd>
+                <dt>actions › post_reaction</dt><dd>Emoji reactions (Like, Love, Haha, etc.). <span class="overlap">Overlaps with organic <em>likes</em></span> — Instagram counts these as likes.</dd>
+                <dt>actions › post</dt><dd>Shares of the ad post to a user's own feed or story.</dd>
+                <dt>actions › video_view</dt><dd>3-second+ video views via the ad. <span class="overlap">Overlaps with organic <em>plays/views</em></span> for boosted videos.</dd>
+                <dt>actions › onsite_conversion.post_save</dt><dd>Saves via the ad. <span class="overlap">Overlaps with organic <em>saves</em>.</span></dd>
+                <dt>actions › onsite_conversion.post_net_like</dt><dd>Net new likes gained through the ad (saves minus unlikes).</dd>
+                <dt>actions › onsite_conversion.post_unlike</dt><dd>Unlikes that happened after the ad-driven like.</dd>
+                <dt>actions › post_interaction_gross</dt><dd>Raw interaction count before deduplication (sum of all action types, may double-count).</dd>
+              </dl>
+            </div>
+          </div>
+          <div class="legend-display">
+            <h3 class="legend-display-title">How Instagram calculates the counts shown on a post</h3>
+            <p class="legend-display-intro">
+              When a post is boosted, Instagram combines organic engagement with ad-driven engagement into a single number.
+              The formula for each visible counter is:
+            </p>
+            <table class="legend-table">
+              <thead>
+                <tr>
+                  <th>Shown on post</th>
+                  <th>Organic field</th>
+                  <th>+ Paid action field</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>LIKES</strong></td>
+                  <td><code>organic.likes</code></td>
+                  <td><code>onsite_conversion.post_net_like</code></td>
+                  <td>Net likes = new likes minus unlikes from the ad audience.</td>
+                </tr>
+                <tr>
+                  <td><strong>COMMENTS</strong></td>
+                  <td><code>organic.comments</code></td>
+                  <td><code>comment</code></td>
+                  <td>Direct comments left via the ad placement.</td>
+                </tr>
+                <tr>
+                  <td><strong>SHARES</strong></td>
+                  <td><code>organic.shares</code></td>
+                  <td><code>post</code></td>
+                  <td>Re-shares of the post to feed or story via the ad.</td>
+                </tr>
+                <tr>
+                  <td><strong>SAVES</strong></td>
+                  <td><code>organic.saved</code></td>
+                  <td><code>onsite_conversion.post_net_save</code></td>
+                  <td>Net saves = bookmarks minus unsaves from the ad audience.</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="legend-display-example">
+              <strong>Example</strong> — post <code>DVuIhDoAchU</code>:<br>
+              Likes: 1,527 organic + 9,247 paid net likes = <strong>10,774 → shown as 10.7K</strong><br>
+              Comments: 10,473 organic + 15 paid comments = <strong>10,488 → shown as 10.5K</strong>
+            </p>
+          </div>
+          <p class="legend-note">
+            <strong>Why the API returns separate numbers instead of the combined total:</strong>
+            Organic metrics come from the Instagram Graph API (media insights) and paid metrics come from the Meta Ads Insights API.
+            These are two independent systems — each records engagement from its own distribution channel.
+            Instagram's app UI deduplicates and merges them; this API response keeps them separate so you can see the contribution of each channel.
+          </p>
+        </details>
+      </section>
+
+      <section class="card">
+        <h2>6. Ad Details by URL</h2>
+        <p>Enter an Instagram post URL to look up the linked ad campaign and paid performance metrics.</p>
+        <div class="grid">
+          <label>Instagram Post URL <input id="ad-post-url" placeholder="https://www.instagram.com/p/..." /></label>
+        </div>
+        <div class="row">
+          <button id="fetch-ad-details" class="btn primary">Fetch Ad Details</button>
+        </div>
+        <pre id="ad-details-result" class="result">No data yet.</pre>
+      </section>
+
+      <section class="card">
+        <h2>7. Recent Posts</h2>
+        <p>Load the last 10 posts from the selected influencer's account. Click any post to use its URL in sections 5 or 6.</p>
+        <div class="row">
+          <button id="load-recent-posts" class="btn primary">Load Last 10 Posts</button>
+        </div>
+        <div id="recent-posts-list" class="posts-list"></div>
+      </section>
+
+    </div><!-- /tab-meta -->
+
+    <!-- ── TikTok tab ───────────────────────────────────────────────────────── -->
+    <div id="tab-tiktok" class="tab-panel" role="tabpanel" hidden>
+
+      <section class="card">
+        <h2>1. Connected TikTok Creators</h2>
+        <p>Select a connected TikTok creator to work with, or connect a new one.</p>
+        <div class="row">
+          <select id="tt-creator-select">
+            <option value="">— select a creator —</option>
+          </select>
+          <button id="tt-load-status" class="btn">Refresh List</button>
+          <a class="btn primary" href="/tiktok/auth/connect">+ Connect TikTok Creator</a>
+        </div>
+        <div class="grid" style="margin-top:0.6rem">
+          <label>
+            Open ID (auto-filled from selection above)
+            <input id="tt-open-id" placeholder="7123..." />
+          </label>
+        </div>
+        <pre id="tt-status" class="result">No data yet.</pre>
+      </section>
+
+      <section class="card">
+        <h2>2. Recent TikTok Videos</h2>
+        <p>Load recent videos from the selected creator. Click any video to auto-fill the sync field below.</p>
+        <div class="row">
+          <button id="tt-load-videos" class="btn primary">Load Recent Videos</button>
+        </div>
+        <div id="tt-videos-list" class="posts-list"></div>
+      </section>
+
+      <section class="card">
+        <h2>3. Fetch Video Metrics</h2>
+        <p>Enter a TikTok video ID to fetch its organic metrics.</p>
+        <div class="grid">
+          <label>TikTok Video ID <input id="tt-video-id" placeholder="7123456789..." /></label>
+        </div>
+        <div class="row">
+          <button id="tt-fetch-metrics" class="btn primary">Fetch Metrics</button>
+          <button id="tt-get-cached" class="btn">Get Cached Metrics</button>
+        </div>
+        <pre id="tt-metrics-result" class="result">No data yet.</pre>
+
+        <details class="metrics-legend">
+          <summary>TikTok metrics reference</summary>
+          <div class="legend-grid">
+            <div class="legend-group">
+              <h3>Organic <span class="legend-source">TikTok Content API</span></h3>
+              <dl>
+                <dt>view_count</dt><dd><span class="overlap">Includes promoted views.</span> TikTok does not separate organic views from boosted views in the Content API — the number shown is the total across both distributions.</dd>
+                <dt>like_count</dt><dd>Total likes on the video.</dd>
+                <dt>comment_count</dt><dd>Total comments on the video.</dd>
+                <dt>share_count</dt><dd>Times the video was shared.</dd>
+              </dl>
+            </div>
+          </div>
+        </details>
+      </section>
+
+    </div><!-- /tab-tiktok -->
+
+    <!-- ── YouTube tab ──────────────────────────────────────────────────────── -->
+    <div id="tab-youtube" class="tab-panel" role="tabpanel" hidden>
+
+      <section class="card">
+        <h2>1. Connected YouTube Channels</h2>
+        <p>Select a connected channel to work with, or connect a new one via Google OAuth.</p>
+        <div class="row">
+          <select id="yt-channel-select">
+            <option value="">— select a channel —</option>
+          </select>
+          <button id="yt-load-status" class="btn">Refresh List</button>
+          <a class="btn primary" href="/youtube/auth/connect">+ Connect YouTube Channel</a>
+        </div>
+        <div class="grid" style="margin-top:0.6rem">
+          <label>
+            Channel ID (auto-filled from selection above)
+            <input id="yt-channel-id" placeholder="UCxxxxxxx..." />
+          </label>
+        </div>
+        <pre id="yt-status" class="result">No data yet.</pre>
+      </section>
+
+      <section class="card">
+        <h2>2. Recent Videos</h2>
+        <p>Load recent videos from the channel with organic engagement stats. Click any video to auto-fill the sync field below.</p>
+        <div class="row">
+          <button id="yt-load-videos" class="btn primary">Load Recent Videos</button>
+        </div>
+        <div id="yt-videos-list" class="posts-list"></div>
+      </section>
+
+      <section class="card">
+        <h2>3. Fetch Video Metrics</h2>
+        <p>Enter a YouTube video ID to fetch its organic metrics.</p>
+        <div class="grid">
+          <label>YouTube Video ID <input id="yt-video-id" placeholder="dMH0bHeiRNg..." /></label>
+        </div>
+        <div class="row">
+          <button id="yt-fetch-metrics" class="btn primary">Fetch Metrics</button>
+          <button id="yt-get-cached" class="btn">Get Cached Metrics</button>
+        </div>
+        <pre id="yt-metrics-result" class="result">No data yet.</pre>
+
+        <details class="metrics-legend">
+          <summary>YouTube metrics reference</summary>
+          <div class="legend-grid">
+            <div class="legend-group">
+              <h3>Organic <span class="legend-source">YouTube Data API v3 + Analytics API v2</span></h3>
+              <dl>
+                <dt>view_count</dt><dd>Total lifetime views on the video (includes all sources).</dd>
+                <dt>like_count</dt><dd>Total likes from YouTube Data API.</dd>
+                <dt>comment_count</dt><dd>Total comments from YouTube Data API.</dd>
+                <dt>share_count</dt><dd>From YouTube Analytics API only (not available in Data API).</dd>
+                <dt>estimated_minutes_watched</dt><dd>Total watch time in minutes, from YouTube Analytics API only.</dd>
+              </dl>
+            </div>
+          </div>
+        </details>
+      </section>
+
+    </div><!-- /tab-youtube -->
 
     <p id="flash" class="flash" aria-live="polite"></p>
   </main>

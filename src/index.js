@@ -7,6 +7,16 @@ const {
   connectionRoutes: ConnectionsRoutes,
   refreshAccountTokens,
 } = require('./platforms/meta')
+const {
+  authRoutes: ttAuthRoutes,
+  metricsRoutes: ttMetricsRoutes,
+  refreshAccountTokens: refreshTikTokTokens,
+} = require('./platforms/tiktok')
+const {
+  authRoutes: ytAuthRoutes,
+  metricsRoutes: ytMetricsRoutes,
+  refreshAccountTokens: refreshYouTubeTokens,
+} = require('./platforms/youtube')
 
 const app = express()
 app.use(express.json())
@@ -64,6 +74,14 @@ app.use('/auth', authRoutes)
 app.use('/', ConnectionsRoutes)
 app.use('/api', metricsRoutes)
 
+// TikTok platform
+app.use('/tiktok/auth', ttAuthRoutes)
+app.use('/tiktok/api', ttMetricsRoutes)
+
+// YouTube platform
+app.use('/youtube/auth', ytAuthRoutes)
+app.use('/youtube/api', ytMetricsRoutes)
+
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
   console.log(`\nMeta Metrics POC → http://localhost:${PORT}`)
@@ -74,22 +92,57 @@ app.listen(PORT, () => {
 const REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000 // every 24 hours
 
 async function runTokenRefresh() {
-  console.log('[token-refresh] Checking for tokens expiring within 30 days...')
+  console.log('[token-refresh] Checking for tokens due for refresh...')
+
   try {
     const result = await refreshAccountTokens()
     if (result.checked === 0) {
-      console.log('[token-refresh] No tokens due for refresh.')
+      console.log('[token-refresh] Meta: no tokens due for refresh.')
     } else {
       for (const r of result.results) {
         if (r.status === 'refreshed') {
-          console.log(`[token-refresh] ✓ ${r.username || r.ig_user_id} refreshed → expires ${r.new_expires_at}`)
+          console.log(`[token-refresh] Meta ✓ ${r.username || r.ig_user_id} refreshed → expires ${r.new_expires_at}`)
         } else {
-          console.error(`[token-refresh] ✗ ${r.username || r.ig_user_id} failed: ${r.error}`)
+          console.error(`[token-refresh] Meta ✗ ${r.username || r.ig_user_id} failed: ${r.error}`)
         }
       }
     }
   } catch (err) {
-    console.error('[token-refresh] Scheduler error:', err.message)
+    console.error('[token-refresh] Meta scheduler error:', err.message)
+  }
+
+  try {
+    const ttResult = await refreshTikTokTokens()
+    if (ttResult.checked === 0) {
+      console.log('[token-refresh] TikTok: no tokens due for refresh.')
+    } else {
+      for (const r of ttResult.results) {
+        if (r.status === 'refreshed') {
+          console.log(`[token-refresh] TikTok ✓ ${r.display_name || r.open_id} refreshed → expires ${r.new_expires_at}`)
+        } else {
+          console.error(`[token-refresh] TikTok ✗ ${r.display_name || r.open_id} ${r.status}: ${r.error || r.reason}`)
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[token-refresh] TikTok scheduler error:', err.message)
+  }
+
+  try {
+    const ytResult = await refreshYouTubeTokens()
+    if (ytResult.checked === 0) {
+      console.log('[token-refresh] YouTube: no tokens due for refresh.')
+    } else {
+      for (const r of ytResult.results) {
+        if (r.status === 'refreshed') {
+          console.log(`[token-refresh] YouTube ✓ ${r.channel_title || r.channel_id} refreshed → expires ${r.new_expires_at}`)
+        } else {
+          console.error(`[token-refresh] YouTube ✗ ${r.channel_title || r.channel_id} ${r.status}: ${r.error || r.reason}`)
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[token-refresh] YouTube scheduler error:', err.message)
   }
 }
 

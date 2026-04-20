@@ -446,6 +446,72 @@ details[open].metrics-legend summary::before { content: '▼ '; }
   line-height: 1.5;
 }
 
+/* Tab bar */
+.tab-bar {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 1.5rem;
+  border-bottom: 2px solid var(--line);
+  padding-bottom: 0;
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.25rem;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  bottom: -2px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.tab-btn:hover {
+  color: var(--ink);
+  background: #f0ede6;
+}
+
+.tab-btn.active {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--line);
+  border-bottom-color: var(--paper);
+}
+
+.tab-btn[data-tab="meta"].active {
+  color: #1877f2;
+}
+
+.tab-btn[data-tab="tiktok"].active {
+  color: #fe2c55;
+}
+
+.tab-btn[data-tab="youtube"].active {
+  color: #ff0000;
+}
+
+.tab-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Tab panels */
+.tab-panel {
+  padding-top: 0.25rem;
+}
+
+.tab-panel[hidden] {
+  display: none;
+}
+
 @media (max-width: 760px) {
   .grid.two {
     grid-template-columns: 1fr;

@@ -1,19 +1,21 @@
-# Meta Metrics POC
+# Platform Metrics POC
 
-A proof-of-concept Node.js server for fetching and merging **organic** (Instagram Graph API) and **paid** (Meta Marketing API) metrics for boosted Instagram posts.
+A proof-of-concept Node.js server for fetching organic metrics across **Instagram**, **TikTok**, and **YouTube**, with full organic + paid metric merging for **Instagram** (Meta Ads).
 
 ## Overview
 
-When an Instagram post is boosted, its performance data is split across two separate Meta API surfaces — organic engagement lives in the Instagram Graph API, while paid ad metrics live in the Marketing API. This POC connects both, discovers the ad linked to a given post, and merges the two metric sets into a single combined view.
+Influencer content metrics are split across multiple API surfaces that cannot substitute for each other. This POC connects each platform's creator-side API to retrieve organic engagement data, and additionally connects the Meta Marketing API to discover boosted ads and merge paid metrics for Instagram posts.
+
+| Platform | Organic Metrics | Paid Metrics |
+|---|---|---|
+| Instagram | Instagram Graph API | Meta Marketing API (Ads Insights) |
+| TikTok | TikTok Content API (Login Kit) | — |
+| YouTube | YouTube Data API v3 + Analytics API v2 | — |
 
 ## Prerequisites
 
 - Node.js 18+
-- A Meta developer app with the following products added:
-  - Instagram Graph API
-  - Facebook Login
-  - Marketing API
-- An Instagram Business account connected to a Facebook Page
+- Platform developer accounts (see Environment Setup below)
 
 ## Setup
 
@@ -25,77 +27,116 @@ When an Instagram post is boosted, its performance data is split across two sepa
 
 2. **Configure environment**
 
-   Copy `.env.example` to `.env` and fill in your credentials:
-
    ```bash
    cp .env.example .env
    ```
 
-   | Variable | Description |
-   |---|---|
-   | `META_APP_ID` | App ID from Meta App Dashboard |
-   | `META_APP_SECRET` | App Secret from Meta App Dashboard |
-   | `META_REDIRECT_URI` | Instagram OAuth callback — must be registered in App Dashboard |
-   | `META_ADS_REDIRECT_URI` | Meta Ads OAuth callback — must be registered in App Dashboard |
-   | `PORT` | Server port (default: `3000`) |
+   Fill in credentials for the platforms you want to use. Each platform is independent — the server starts without any of them configured.
 
-   Optional overrides:
-   | Variable | Description |
-   |---|---|
-   | `INSTAGRAM_APP_ID` | Separate App ID for Instagram Login product (falls back to `META_APP_ID`) |
-   | `INSTAGRAM_APP_SECRET` | Separate App Secret for Instagram Login product |
-   | `INSTAGRAM_OAUTH_SCOPES` | Override default Instagram OAuth scopes |
-   | `META_GRAPH_BASE` | Override Graph API base URL (default: `https://graph.facebook.com/v23.0`) |
+3. **Run the server**
 
-3. **Register redirect URIs** in Meta App Dashboard
+   ```bash
+   npm start        # production
+   npm run dev      # auto-restart on file changes
+   ```
 
-   - `http://localhost:3000/auth/callback` → Instagram Login callback
-   - `http://localhost:3000/connections/meta-ads/callback` → Meta Ads callback
+   Open `http://localhost:3000/ui` for the browser UI.
 
-## Running
+## Environment Variables
 
-```bash
-# Production
-npm start
+### Instagram / Meta
 
-# Development (auto-restart on file changes)
-npm run dev
-```
+| Variable | Required | Description |
+|---|---|---|
+| `META_APP_ID` | Yes | App ID from Meta App Dashboard |
+| `META_APP_SECRET` | Yes | App Secret from Meta App Dashboard |
+| `META_REDIRECT_URI` | Yes | Instagram OAuth callback — `http://localhost:3000/auth/callback` |
+| `META_ADS_REDIRECT_URI` | Yes | Meta Ads OAuth callback — `http://localhost:3000/connections/meta-ads/callback` |
 
-Server starts at `http://localhost:3000`. Open `http://localhost:3000/ui` to use the POC UI.
+Optional: `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`, `INSTAGRAM_OAUTH_SCOPES`, `META_GRAPH_BASE`
+
+**Redirect URIs to register** in Meta App Dashboard → Instagram → API setup:
+- `http://localhost:3000/auth/callback`
+- `http://localhost:3000/connections/meta-ads/callback`
+
+### TikTok
+
+| Variable | Required | Description |
+|---|---|---|
+| `TIKTOK_CLIENT_KEY` | Yes | Client Key from [developers.tiktok.com](https://developers.tiktok.com) → My Apps → Basic Info |
+| `TIKTOK_CLIENT_SECRET` | Yes | Client Secret from the same page |
+| `TIKTOK_REDIRECT_URI` | Yes | OAuth callback — `http://localhost:3000/tiktok/auth/callback` |
+
+**Redirect URI to register** in TikTok Developer Portal → your app → Login Kit → Redirect URI allowlist:
+- `http://localhost:3000/tiktok/auth/callback`
+
+Optional: `TIKTOK_SCOPES`, `TIKTOK_CONTENT_BASE`
+
+### YouTube / Google
+
+| Variable | Required | Description |
+|---|---|---|
+| `GOOGLE_CLIENT_ID` | Yes | OAuth Client ID from [console.cloud.google.com](https://console.cloud.google.com) |
+| `GOOGLE_CLIENT_SECRET` | Yes | OAuth Client Secret from the same page |
+| `YOUTUBE_REDIRECT_URI` | Yes | OAuth callback — `http://localhost:3000/youtube/auth/callback` |
+
+**APIs to enable** in Google Cloud Console → APIs & Services → Library:
+- YouTube Data API v3
+- YouTube Analytics API
+
+**Redirect URI to register** in Google Cloud Console → Credentials → your OAuth client → Authorized redirect URIs:
+- `http://localhost:3000/youtube/auth/callback`
+
+> The OAuth consent screen must be in **Testing** mode with your account added as a test user, or published for production use.
+
+Optional: `GOOGLE_ADS_BASE`
 
 ## Usage Flow
 
-1. **Connect Instagram** — authorize an Instagram Business account via the UI (`GET /auth/connect`)
-2. **Connect Meta Ads** — authorize the ad account that ran the boost (`POST /connections/meta-ads/init`)
-3. **Select the ad account** — choose which ad account to use for a given influencer (`POST /connections/meta-ads/select-ad-account`)
-4. **Sync boosted metrics** — provide an Instagram post URL or media ID to discover the linked ad and pull paid insights
-5. **View merged metrics** — compare the combined organic + paid output against Instagram's native UI totals
+### Instagram
+
+1. Connect an Instagram Business account via the UI
+2. Connect the Meta Ads account that ran the boost
+3. Select the ad account for the influencer
+4. Paste an Instagram post URL to sync organic + paid metrics
+5. View the merged output
+
+### TikTok
+
+1. Connect a TikTok creator account via the UI
+2. Load recent videos
+3. Select a video to fetch its organic metrics
+
+### YouTube
+
+1. Connect a YouTube channel via Google OAuth
+2. Load recent videos with organic stats
+3. Select a video to sync its metrics (views, likes, comments, shares, watch time)
 
 ## API Endpoints
 
-### Auth
+### Instagram Auth
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/auth/connect` | Start Instagram Login OAuth flow |
-| `GET` | `/auth/callback` | OAuth redirect handler (auto) |
-| `GET` | `/auth/status` | List connected influencer accounts |
+| `GET` | `/auth/connect` | Start Instagram Login OAuth |
+| `GET` | `/auth/callback` | OAuth redirect handler |
+| `GET` | `/auth/status` | List connected accounts |
 | `DELETE` | `/auth/disconnect/:igUserId` | Remove a stored token |
-| `POST` | `/auth/refresh-tokens` | Refresh tokens expiring within 30 days |
+| `POST` | `/auth/refresh-tokens` | Refresh expiring tokens |
 
-### Meta Ads Connections
+### Instagram Ads Connection
 
 | Method | Endpoint | Description |
 |---|---|---|
 | `POST` | `/connections/meta-ads/init` | Build Meta Ads OAuth URL |
 | `GET` | `/connections/meta-ads/callback` | Meta Ads OAuth callback |
-| `POST` | `/connections/meta-ads/select-ad-account` | Set the active ad account for an influencer |
-| `GET` | `/connections/meta-ads/status` | Check Meta Ads connection status (`?ig_user_id=`) |
-| `GET` | `/connections/meta-ads/permissions` | Check granted/missing ads permissions (`?ig_user_id=`) |
+| `POST` | `/connections/meta-ads/select-ad-account` | Set the active ad account |
+| `GET` | `/connections/meta-ads/status` | Check connection status (`?ig_user_id=`) |
+| `GET` | `/connections/meta-ads/permissions` | Check granted/missing permissions (`?ig_user_id=`) |
 | `GET` | `/connections/meta-ads/ad-accounts` | List accessible ad accounts (`?ig_user_id=`) |
 
-### Metrics
+### Instagram Metrics
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -103,43 +144,97 @@ Server starts at `http://localhost:3000`. Open `http://localhost:3000/ui` to use
 | `GET` | `/api/media/insights` | All posts with organic insights (`?ig_user_id=`) |
 | `GET` | `/api/media/:mediaId/insights` | Single post organic insights (`?ig_user_id=`) |
 | `GET` | `/api/saved-metrics` | View SQLite metric cache |
-| `POST` | `/api/organic-metrics/upsert` | Push organic metrics from an external source (e.g. Phyllo) |
-| `POST` | `/api/campaign-content/:instagramMediaId/boosted-metrics/sync` | Discover linked ad, pull paid insights, merge (`?ig_user_id=`) |
-| `GET` | `/api/campaign-content/:instagramMediaId/metrics` | Get latest organic + paid + merged view (`?ig_user_id=`) |
+| `POST` | `/api/organic-metrics/upsert` | Push organic metrics from external source |
+| `POST` | `/api/campaign-content/:mediaId/boosted-metrics/sync` | Discover linked ad, pull paid insights, merge (`?ig_user_id=`) |
+| `GET` | `/api/campaign-content/:mediaId/metrics` | Latest organic + paid + merged view (`?ig_user_id=`) |
+
+### TikTok Auth
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/tiktok/auth/connect` | Start TikTok Login Kit OAuth |
+| `GET` | `/tiktok/auth/callback` | OAuth redirect handler |
+| `GET` | `/tiktok/auth/status` | List connected creators |
+| `DELETE` | `/tiktok/auth/disconnect/:openId` | Remove a stored token |
+| `POST` | `/tiktok/auth/refresh-tokens` | Refresh expiring tokens |
+
+### TikTok Metrics
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/tiktok/api/videos` | List creator videos (`?open_id=`) |
+| `GET` | `/tiktok/api/videos/insights` | Fetch and cache organic metrics for recent videos (`?open_id=`) |
+| `GET` | `/tiktok/api/saved-metrics` | View SQLite metric cache |
+| `POST` | `/tiktok/api/campaign-content/:videoId/spark-metrics/sync` | Fetch and store fresh organic metrics (`?open_id=`) |
+| `GET` | `/tiktok/api/campaign-content/:videoId/metrics` | Latest cached metrics (`?open_id=`) |
+
+### YouTube Auth
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/youtube/auth/connect` | Start Google OAuth |
+| `GET` | `/youtube/auth/callback` | OAuth redirect handler |
+| `GET` | `/youtube/auth/status` | List connected channels |
+| `DELETE` | `/youtube/auth/disconnect/:channelId` | Remove a stored token |
+| `POST` | `/youtube/auth/refresh-tokens` | Refresh expiring tokens |
+
+### YouTube Metrics
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/youtube/api/videos` | List channel videos (`?channel_id=`) |
+| `GET` | `/youtube/api/videos/insights` | Fetch and cache organic metrics for recent videos (`?channel_id=`) |
+| `GET` | `/youtube/api/saved-metrics` | View SQLite metric cache |
+| `POST` | `/youtube/api/campaign-content/:videoId/ad-metrics/sync` | Fetch and store fresh organic metrics (`?channel_id=`) |
+| `GET` | `/youtube/api/campaign-content/:videoId/metrics` | Latest cached metrics (`?channel_id=`) |
 
 ## Architecture
 
 ```
 src/
-├── index.js                          # Express server, route mounting, token refresh scheduler
-├── db.js                             # SQLite database (better-sqlite3)
-└── platforms/meta/
-    ├── index.js                      # Re-exports routes and utilities
-    ├── instagram-client.js           # Instagram Graph API client
-    ├── meta-ads.js                   # Meta Marketing API client
-    └── routes/
-        ├── auth.js                   # Instagram OAuth and token management
-        ├── connections.js            # Meta Ads OAuth and connection management
-        └── metrics.js                # Organic + paid metrics endpoints
+├── index.js                        # Express entry point, route mounting, token refresh scheduler
+├── db.js                           # SQLite schema (better-sqlite3)
+├── public/                         # Tabbed browser UI (Instagram / TikTok / YouTube)
+└── platforms/
+    ├── meta/
+    │   ├── instagram-client.js     # Instagram Graph API wrapper
+    │   ├── meta-ads.js             # Meta Marketing API wrapper
+    │   └── routes/
+    │       ├── auth.js             # Instagram OAuth + token refresh
+    │       ├── connections.js      # Meta Ads OAuth + ad account selection
+    │       └── metrics.js          # Organic + paid fetch, ad discovery, merge
+    ├── tiktok/
+    │   ├── tiktok-client.js        # TikTok Content API wrapper (Login Kit)
+    │   └── routes/
+    │       ├── auth.js             # TikTok Login OAuth + token refresh
+    │       └── metrics.js          # Organic metrics fetch and cache
+    └── youtube/
+        ├── youtube-client.js       # YouTube Data API v3 + Analytics API v2 wrapper
+        └── routes/
+            ├── auth.js             # Google OAuth + token refresh
+            └── metrics.js          # Organic metrics fetch and cache
 ```
 
-**Storage:** Tokens and metrics are persisted locally in a SQLite database via `better-sqlite3`.
+**Storage:** All tokens and metrics are persisted in a local SQLite database (`data.db`, gitignored).
 
-**Token refresh:** On startup (after 30s) and every 24 hours, the server automatically refreshes any Instagram access tokens expiring within 30 days.
-
-## How Paid Metric Discovery Works
-
-Meta provides no direct mapping from a post's `media_id` to its ad. Discovery follows two paths:
-
-1. **Path A — `boost_ads_list`** (preferred): If the post was boosted via the Instagram app and the boost is still active, the `boost_ads_list` field on the media object contains the `ad_id` directly.
-
-2. **Path B — Ad scan** (fallback): Paginate all ads in the connected ad account and match by shortcode in `creative.instagram_permalink_url` or by `media_id` in `creative.effective_object_story_id`. The first match is confirmed by fetching the full ad creative before pulling insights.
-
-See [notion-doc-meta-metrics.md](notion-doc-meta-metrics.md) for full API documentation, metric definitions, and overlap behavior between organic and paid counts.
+**Token refresh:** The scheduler runs 30 seconds after startup and every 24 hours. It refreshes Instagram tokens expiring within 30 days, TikTok tokens expiring within 24 hours, and YouTube tokens expiring within 10 minutes. YouTube also does lazy refresh before each API call.
 
 ## Key Notes
 
-- Two separate OAuth authorizations are required — Instagram Login (organic data) and Meta Ads Login (paid data). Neither token can substitute for the other.
-- `impressions` was removed from organic Instagram Media insights in API v22.0+. Impression counts for boosted posts are only available through the Marketing API.
-- Organic and paid reach/engagement figures overlap — Meta does not deduplicate them at the API level. Merged totals should be validated against the Instagram native UI.
-- Current API version: `v23.0`
+### Instagram
+
+- Two separate OAuth flows are required: Instagram Login (organic) and Meta Ads Login (paid). Neither token substitutes for the other.
+- `impressions` was removed from organic Instagram media insights in API v22.0+. Impression counts are only available through the Marketing API.
+- Paid metric discovery follows two paths: `boost_ads_list` on the media object (preferred), then a full ad account scan matching by shortcode or `media_id` (fallback).
+- Organic and paid reach/engagement overlap — Meta does not deduplicate them. Validate merged totals against the Instagram native UI.
+
+### TikTok
+
+- `view_count` from the Content API includes promoted views — it is not organic-only.
+- TikTok access tokens expire every 24 hours; refresh tokens are valid for 365 days.
+
+### YouTube
+
+- `view_count` from the YouTube Data API includes all views (organic + ad-driven). Do not add paid views to it.
+- `share_count` and `estimated_minutes_watched` are only available from the Analytics API, not the Data API.
+- Google access tokens expire every hour — lazy refresh runs before each API call.
