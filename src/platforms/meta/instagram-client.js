@@ -12,6 +12,18 @@ function getInstagramClientSecret() {
   return process.env.INSTAGRAM_APP_SECRET || process.env.META_APP_SECRET
 }
 
+// Instagram shortcodes are base64url-encoded numeric media IDs using this alphabet.
+// Decoding gives the numeric ID that can be fetched directly via GET /{mediaId}.
+const SHORTCODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+
+function shortcodeToMediaId(shortcode) {
+  let n = BigInt(0)
+  for (const c of shortcode) {
+    n = n * BigInt(64) + BigInt(SHORTCODE_ALPHABET.indexOf(c))
+  }
+  return n.toString()
+}
+
 // impressions was removed from IG Media insights in API v22.0+.
 // plays was replaced by views for VIDEO and REELS in v22.0+.
 const METRICS_BY_TYPE = {
@@ -166,7 +178,18 @@ class InstagramClient {
     ).get(this.igUserId, `%/${shortcode}/%`)
     if (cached) return cached
 
-    // Paginate the API with a hard cap to avoid rate limiting
+    // Try direct lookup by numeric media ID — faster and works for posts of any age
+    try {
+      const mediaId = shortcodeToMediaId(shortcode)
+      const media = await this.graphGet(`/${mediaId}`, {
+        fields: 'id,caption,media_type,permalink,thumbnail_url,timestamp,boost_ads_list',
+      })
+      if (media?.id) return media
+    } catch {
+      // Post not accessible via direct ID — fall through to paginated scan
+    }
+
+    // Fall back to paginating the account's media list
     let after = null
     let page = 0
     do {
